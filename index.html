@@ -1,101 +1,200 @@
-<div class="flex h-screen overflow-hidden bg-stone-50">
-    
-    <aside class="w-64 bg-stone-900 text-stone-300 flex flex-col border-r border-stone-800">
-        <div class="p-6 border-b border-stone-800">
-            <h1 class="text-white font-bold tracking-tighter text-xl">KAULA <span class="text-orange-500">DB</span></h1>
-        </div>
-        <nav class="flex-1 overflow-y-auto p-4 space-y-2 text-sm" id="sidebarSubjects">
-            <p class="text-[10px] uppercase tracking-widest text-stone-500 font-bold mb-4">Traditions</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaula Research Archive - Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@400;500;600;700&family=Fira+Code:wght@500&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #fcfaf8; }
+        .serif { font-family: 'Playfair Display', serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e7e5e4; border-radius: 10px; }
+        .active-row { border-left: 4px solid #c2410c; background-color: #fffaf0; }
+    </style>
+</head>
+<body class="h-screen overflow-hidden">
+
+    <div class="flex h-full">
+        <aside class="w-72 bg-stone-900 text-stone-300 flex flex-col shadow-2xl z-20">
+            <div class="p-6 border-b border-stone-800 flex items-center justify-between">
+                <div>
+                    <h1 class="text-white font-bold tracking-tighter text-xl">KAULA <span class="text-orange-500 italic">ARCHIVE</span></h1>
+                    <p class="text-[9px] uppercase tracking-[0.2em] text-stone-500 mt-1 font-bold">Varanasi Digital Lab</p>
+                </div>
+            </div>
+            
+            <nav class="flex-1 overflow-y-auto p-4 space-y-1" id="subjectNav">
+                <p class="px-3 text-[10px] uppercase tracking-widest text-stone-500 font-bold mb-4 mt-2">Traditions / Subjects</p>
+                <button onclick="filterBySubject('All')" class="w-full text-left px-3 py-2 rounded-md hover:bg-stone-800 transition-colors text-sm font-medium">📜 All Manuscripts</button>
+                <button onclick="filterBySubject('SSTRS')" class="w-full text-left px-3 py-2 rounded-md hover:bg-stone-800 transition-colors text-sm">Satsahasra Trans</button>
+                <button onclick="filterBySubject('SSDEV')" class="w-full text-left px-3 py-2 rounded-md hover:bg-stone-800 transition-colors text-sm">Satsahasra Dev</button>
+                <button onclick="filterBySubject('AAJNAA')" class="w-full text-left px-3 py-2 rounded-md hover:bg-stone-800 transition-colors text-sm">Aajuaa Collection</button>
+                <button onclick="filterBySubject('KHNOTES')" class="w-full text-left px-3 py-2 rounded-md hover:bg-stone-800 transition-colors text-sm">KH Notes</button>
+                <button onclick="filterBySubject('MASTERFILENEWEST')" class="w-full text-left px-3 py-2 rounded-md hover:bg-stone-800 transition-colors text-sm">Master West Archive</button>
             </nav>
-    </aside>
 
-    <main class="flex-1 flex flex-col min-w-0">
-        <header class="h-16 bg-white border-b border-stone-200 flex items-center px-8 justify-between">
-            <div class="flex-1 max-w-xl">
-                <input type="text" id="universalSearch" placeholder="Search by Title, Sage, or Catalog No..." 
-                    class="w-full bg-stone-100 border-none rounded-full py-2 px-6 text-sm focus:ring-2 focus:ring-orange-500 transition-all">
+            <div class="p-6 bg-stone-950 border-t border-stone-800">
+                <div id="dbStatus" class="text-[10px] mono text-stone-500 font-bold tracking-widest">DB: CONNECTING...</div>
             </div>
-            <div id="dbStatus" class="text-[10px] font-mono font-bold text-stone-400 ml-4">DB STATUS: CONNECTING...</div>
-        </header>
+        </aside>
 
-        <div class="flex-1 overflow-y-auto p-8" id="manuscriptList">
-            </div>
-    </main>
+        <main class="flex-1 flex flex-col bg-stone-50 min-w-0">
+            <header class="h-16 bg-white border-b border-stone-200 flex items-center px-8 flex-none">
+                <div class="relative flex-1 max-w-2xl">
+                    <span class="absolute left-4 top-2.5 text-stone-400">🔍</span>
+                    <input type="text" id="universalSearch" placeholder="Search Catalog No, IAST, or Sanskrit..." 
+                        class="w-full bg-stone-100 border-none rounded-full py-2 pl-12 pr-6 text-sm focus:ring-2 focus:ring-orange-500/20 transition-all outline-none">
+                </div>
+                <div class="ml-6 flex items-center text-stone-400 text-xs">
+                    <span class="mr-2">User:</span>
+                    <span class="text-stone-900 font-semibold uppercase tracking-wider">Ramachandra</span>
+                </div>
+            </header>
 
-    <aside id="readerPane" class="w-0 bg-white border-l border-stone-200 transition-all duration-300 overflow-y-auto">
-        <div class="p-8" id="readerContent">
-            </div>
-    </aside>
-</div>
+            <div id="manuscriptList" class="flex-1 overflow-y-auto p-8 space-y-2">
+                </div>
+        </main>
 
-<script>
-    const SUPABASE_URL = "https://gcgxcnbimqpfrowesfms.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_XObSGljjo-VILprIHw_Bxw_FKM7uUOU"; 
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        <aside id="previewPane" class="w-0 bg-white border-l border-stone-200 transition-all duration-300 overflow-y-auto z-10">
+            <div id="previewContent" class="p-10 invisible opacity-0 transition-opacity duration-300">
+                </div>
+        </aside>
+    </div>
 
-    let activeManuscript = null;
+    <script>
+        // --- 1. CONFIGURATION (Updated with your specific keys) ---
+        const SUPABASE_URL = "https://gcgxcnbimqpfrowesfms.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_XObSGljjo-VILprIHw_Bxw_FKM7uUOU"; 
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function fetchData(searchTerm = '', subject = null) {
-        let query = supabaseClient.from('manuscripts').select('*');
-        if (searchTerm) query = query.ilike('search_blob', `%${searchTerm}%`);
-        if (subject) query = query.eq('subject', subject);
-        
-        const { data, error } = await query.limit(50).order('title_iast');
-        if (!error) renderList(data);
-    }
+        let currentSubject = 'All';
 
-    function renderList(data) {
-        const list = document.getElementById('manuscriptList');
-        document.getElementById('dbStatus').innerText = `LIVE (${data.length} RECORDS)`;
-        
-        list.innerHTML = data.map(m => `
-            <div onclick="openReader(${JSON.stringify(m).replace(/"/g, '&quot;')})" 
-                class="group flex items-center justify-between p-4 mb-2 bg-white border border-stone-200 rounded-lg hover:border-orange-300 cursor-pointer transition-all">
-                <div class="flex items-center space-x-4">
-                    <span class="text-[10px] font-mono text-stone-400">${m.catalog_no || 'TBD'}</span>
+        // --- 2. DATA FETCHING ---
+        async function searchManuscripts() {
+            const searchTerm = document.getElementById('universalSearch').value;
+            const statusLabel = document.getElementById('dbStatus');
+
+            let query = supabaseClient.from('manuscripts').select('*');
+
+            if (searchTerm) {
+                query = query.ilike('search_blob', `%${searchTerm}%`);
+            }
+            if (currentSubject !== 'All') {
+                query = query.eq('subject', currentSubject);
+            }
+
+            const { data, error } = await query.limit(50).order('catalog_no', { ascending: true });
+
+            if (error) {
+                statusLabel.innerText = "DB: ERROR";
+                statusLabel.className = "text-[10px] mono text-red-600 font-bold tracking-widest";
+                return;
+            }
+
+            statusLabel.innerText = `DB: LIVE (${data.length} RECORDS)`;
+            statusLabel.className = "text-[10px] mono text-green-600 font-bold tracking-widest";
+            renderList(data);
+        }
+
+        function filterBySubject(subject) {
+            currentSubject = subject;
+            searchManuscripts();
+        }
+
+        // --- 3. RENDER LIST VIEW ---
+        function renderList(data) {
+            const list = document.getElementById('manuscriptList');
+            if (!data || data.length === 0) {
+                list.innerHTML = '<div class="text-stone-400 italic p-8 text-center border-2 border-dashed border-stone-200 rounded-xl">No manuscripts found for this tradition or search.</div>';
+                return;
+            }
+
+            list.innerHTML = data.map(m => {
+                const title = m.title_iast || m.Title_IAST || m.title || "Untitled Manuscript";
+                const dev = m.title_dev || m.Title_Dev || m.devanagari || "Transcription in progress";
+                
+                return `
+                    <div onclick="openPreview(${JSON.stringify(m).replace(/"/g, '&quot;')}, this)" 
+                        class="group bg-white border border-stone-200 rounded-lg p-4 flex items-center justify-between hover:border-orange-200 hover:shadow-sm cursor-pointer transition-all">
+                        <div class="flex items-center space-x-6">
+                            <span class="mono text-[10px] font-bold text-stone-400 bg-stone-50 px-2 py-1 rounded w-16 text-center">${m.catalog_no || 'TBD'}</span>
+                            <div>
+                                <h4 class="text-stone-900 font-bold group-hover:text-orange-800 transition-colors">${title}</h4>
+                                <p class="text-xs text-stone-400 italic">${dev}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[9px] uppercase tracking-widest font-black text-stone-300 group-hover:text-orange-400 transition-colors">${m.subject}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- 4. PREVIEW (READER) LOGIC ---
+        function openPreview(m, element) {
+            document.querySelectorAll('#manuscriptList > div').forEach(div => div.classList.remove('active-row'));
+            element.classList.add('active-row');
+
+            const pane = document.getElementById('previewPane');
+            const content = document.getElementById('previewContent');
+            
+            pane.style.width = "500px";
+            content.classList.remove('invisible', 'opacity-0');
+
+            const title = m.title_iast || m.Title_IAST || m.title || "Untitled";
+            const dev = m.title_dev || m.Title_Dev || m.devanagari || "";
+
+            content.innerHTML = `
+                <div class="flex justify-between items-center mb-10">
+                    <button onclick="closePreview()" class="text-stone-400 hover:text-black text-xs uppercase tracking-widest font-bold">✕ Close Reader</button>
+                    <span class="mono text-[10px] text-stone-400">ID: ${m.id || 'N/A'}</span>
+                </div>
+                
+                <span class="text-[10px] uppercase font-black text-orange-600 tracking-[0.2em] mb-4 block">${m.subject}</span>
+                <h2 class="serif text-4xl text-stone-900 mb-2 leading-tight">${title}</h2>
+                <p class="text-2xl text-stone-500 mb-8 italic">${dev}</p>
+                
+                <div class="grid grid-cols-2 gap-8 py-8 border-t border-stone-100">
                     <div>
-                        <h4 class="font-bold text-stone-800">${m.title_iast || m.title}</h4>
-                        <p class="text-xs text-stone-400 italic">${m.title_dev || ''}</p>
+                        <label class="block text-[10px] font-black text-stone-400 uppercase mb-1">Author / Sage</label>
+                        <p class="text-stone-800 font-medium">${m.author || 'Traditional'}</p>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-stone-400 uppercase mb-1">Catalog Number</label>
+                        <p class="text-stone-800 font-medium">${m.catalog_no || 'Pending'}</p>
                     </div>
                 </div>
-                <span class="text-[10px] uppercase font-bold text-stone-400 group-hover:text-orange-600">${m.subject}</span>
-            </div>
-        `).join('');
-    }
 
-    function openReader(m) {
-        const pane = document.getElementById('readerPane');
-        const content = document.getElementById('readerContent');
-        pane.style.width = "450px";
-        
-        content.innerHTML = `
-            <button onclick="closeReader()" class="text-stone-400 hover:text-black mb-8">← Back to List</button>
-            <span class="block text-[10px] uppercase font-bold text-orange-600 mb-2">${m.subject}</span>
-            <h2 class="serif text-3xl text-stone-900 mb-2">${m.title_iast || m.title}</h2>
-            <p class="text-xl text-stone-500 mb-6">${m.title_dev || ''}</p>
-            
-            <div class="space-y-4 pt-6 border-t border-stone-100">
-                <div>
-                    <label class="text-[10px] font-bold text-stone-400 uppercase">Author / Sage</label>
-                    <p class="text-stone-800">${m.author || 'Traditional'}</p>
+                <div class="mt-8 p-8 bg-orange-50/50 rounded-2xl border border-orange-100">
+                    <h4 class="text-xs font-black text-orange-800 uppercase mb-4 tracking-widest">Manuscript Content</h4>
+                    <p class="text-stone-500 text-sm leading-relaxed italic">
+                        Digital text for this folio is currently being processed through the .DOC to Unicode pipeline. 
+                        Once conversion is complete, Sanskrit verses will appear here in dual IAST/Devanagari format.
+                    </p>
                 </div>
-                <div>
-                    <label class="text-[10px] font-bold text-stone-400 uppercase">Archive Period</label>
-                    <p class="text-stone-800">${m.era || 'Unknown'}</p>
+                
+                <div class="mt-8 flex space-x-2">
+                    <button class="flex-1 bg-stone-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-black transition-colors">Download Metadata</button>
+                    <button class="p-3 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors">📄</button>
                 </div>
-            </div>
+            `;
+        }
 
-            <div class="mt-12 p-6 bg-stone-50 rounded-xl border border-stone-200">
-                <h4 class="font-bold text-sm mb-2">Manuscript Content</h4>
-                <p class="text-stone-400 text-sm italic">Content is currently being converted from legacy .DOC to Unicode. Detailed text preview will appear here shortly.</p>
-            </div>
-        `;
-    }
+        function closePreview() {
+            document.getElementById('previewPane').style.width = "0px";
+            document.getElementById('previewContent').classList.add('invisible', 'opacity-0');
+            document.querySelectorAll('#manuscriptList > div').forEach(div => div.classList.remove('active-row'));
+        }
 
-    function closeReader() {
-        document.getElementById('readerPane').style.width = "0px";
-    }
-
-    document.getElementById('universalSearch').addEventListener('input', (e) => fetchData(e.target.value));
-    window.onload = () => fetchData();
-</script>
+        // --- 5. INITIALIZATION ---
+        document.getElementById('universalSearch').addEventListener('input', searchManuscripts);
+        window.onload = searchManuscripts;
+    </script>
+</body>
+</html>
