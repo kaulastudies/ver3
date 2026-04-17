@@ -1,0 +1,101 @@
+<div class="flex h-screen overflow-hidden bg-stone-50">
+    
+    <aside class="w-64 bg-stone-900 text-stone-300 flex flex-col border-r border-stone-800">
+        <div class="p-6 border-b border-stone-800">
+            <h1 class="text-white font-bold tracking-tighter text-xl">KAULA <span class="text-orange-500">DB</span></h1>
+        </div>
+        <nav class="flex-1 overflow-y-auto p-4 space-y-2 text-sm" id="sidebarSubjects">
+            <p class="text-[10px] uppercase tracking-widest text-stone-500 font-bold mb-4">Traditions</p>
+            </nav>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-w-0">
+        <header class="h-16 bg-white border-b border-stone-200 flex items-center px-8 justify-between">
+            <div class="flex-1 max-w-xl">
+                <input type="text" id="universalSearch" placeholder="Search by Title, Sage, or Catalog No..." 
+                    class="w-full bg-stone-100 border-none rounded-full py-2 px-6 text-sm focus:ring-2 focus:ring-orange-500 transition-all">
+            </div>
+            <div id="dbStatus" class="text-[10px] font-mono font-bold text-stone-400 ml-4">DB STATUS: CONNECTING...</div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8" id="manuscriptList">
+            </div>
+    </main>
+
+    <aside id="readerPane" class="w-0 bg-white border-l border-stone-200 transition-all duration-300 overflow-y-auto">
+        <div class="p-8" id="readerContent">
+            </div>
+    </aside>
+</div>
+
+<script>
+    const SUPABASE_URL = "https://gcgxcnbimqpfrowesfms.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_XObSGljjo-VILprIHw_Bxw_FKM7uUOU"; 
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let activeManuscript = null;
+
+    async function fetchData(searchTerm = '', subject = null) {
+        let query = supabaseClient.from('manuscripts').select('*');
+        if (searchTerm) query = query.ilike('search_blob', `%${searchTerm}%`);
+        if (subject) query = query.eq('subject', subject);
+        
+        const { data, error } = await query.limit(50).order('title_iast');
+        if (!error) renderList(data);
+    }
+
+    function renderList(data) {
+        const list = document.getElementById('manuscriptList');
+        document.getElementById('dbStatus').innerText = `LIVE (${data.length} RECORDS)`;
+        
+        list.innerHTML = data.map(m => `
+            <div onclick="openReader(${JSON.stringify(m).replace(/"/g, '&quot;')})" 
+                class="group flex items-center justify-between p-4 mb-2 bg-white border border-stone-200 rounded-lg hover:border-orange-300 cursor-pointer transition-all">
+                <div class="flex items-center space-x-4">
+                    <span class="text-[10px] font-mono text-stone-400">${m.catalog_no || 'TBD'}</span>
+                    <div>
+                        <h4 class="font-bold text-stone-800">${m.title_iast || m.title}</h4>
+                        <p class="text-xs text-stone-400 italic">${m.title_dev || ''}</p>
+                    </div>
+                </div>
+                <span class="text-[10px] uppercase font-bold text-stone-400 group-hover:text-orange-600">${m.subject}</span>
+            </div>
+        `).join('');
+    }
+
+    function openReader(m) {
+        const pane = document.getElementById('readerPane');
+        const content = document.getElementById('readerContent');
+        pane.style.width = "450px";
+        
+        content.innerHTML = `
+            <button onclick="closeReader()" class="text-stone-400 hover:text-black mb-8">← Back to List</button>
+            <span class="block text-[10px] uppercase font-bold text-orange-600 mb-2">${m.subject}</span>
+            <h2 class="serif text-3xl text-stone-900 mb-2">${m.title_iast || m.title}</h2>
+            <p class="text-xl text-stone-500 mb-6">${m.title_dev || ''}</p>
+            
+            <div class="space-y-4 pt-6 border-t border-stone-100">
+                <div>
+                    <label class="text-[10px] font-bold text-stone-400 uppercase">Author / Sage</label>
+                    <p class="text-stone-800">${m.author || 'Traditional'}</p>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-stone-400 uppercase">Archive Period</label>
+                    <p class="text-stone-800">${m.era || 'Unknown'}</p>
+                </div>
+            </div>
+
+            <div class="mt-12 p-6 bg-stone-50 rounded-xl border border-stone-200">
+                <h4 class="font-bold text-sm mb-2">Manuscript Content</h4>
+                <p class="text-stone-400 text-sm italic">Content is currently being converted from legacy .DOC to Unicode. Detailed text preview will appear here shortly.</p>
+            </div>
+        `;
+    }
+
+    function closeReader() {
+        document.getElementById('readerPane').style.width = "0px";
+    }
+
+    document.getElementById('universalSearch').addEventListener('input', (e) => fetchData(e.target.value));
+    window.onload = () => fetchData();
+</script>
